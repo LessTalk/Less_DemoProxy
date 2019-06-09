@@ -1,4 +1,4 @@
-package org.ls.docproxy.staticproxy
+package org.ls.docproxy.proxy
 
 import android.util.Log
 

@@ -15,4 +15,12 @@
       android:text="静态代理-操盘手投资"
       />
 
+
+  <Button
+      android:id="@+id/btn_dynamic_proxy"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="动态代理-操盘手投资"
+      />
+
 </LinearLayout>

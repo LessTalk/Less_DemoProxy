@@ -1,4 +1,4 @@
-package org.ls.docproxy.staticproxy
+package org.ls.docproxy.proxy
 
 /**
  * 先定义一个投资者接口
