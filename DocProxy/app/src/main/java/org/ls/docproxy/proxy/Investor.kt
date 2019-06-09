@@ -11,15 +11,15 @@ class Investor(private var name: String) : IInvestor {
     user: String,
     password: String
   ) {
-    Log.i("Investor", "$name-登录成功")
+    System.out.println("$name-登录成功")
   }
 
   override fun buyStock() {
-    Log.i("Investor", "$name-在购买股票")
+    System.out.println("$name-在购买股票")
   }
 
   override fun sellStock() {
-    Log.i("Investor", "$name-在卖股票")
+    System.out.println("$name-在卖股票")
   }
 
 }

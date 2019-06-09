@@ -2,6 +2,7 @@ package org.ls.docproxy
 
 import android.app.Activity
 import android.os.Bundle
+import android.util.Log
 import kotlinx.android.synthetic.main.activity_main.btn_dynamic_proxy
 import kotlinx.android.synthetic.main.activity_main.btn_static_proxy
 import org.ls.docproxy.proxy.IInvestor
@@ -9,14 +10,13 @@ import org.ls.docproxy.proxy.Investor
 import org.ls.docproxy.proxy.InvestorHandler
 import org.ls.docproxy.proxy.InvestorProxy
 import java.lang.reflect.Proxy
-
 class TestActivity : Activity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
-    System.getProperties()["sun.misc.ProxyGenerator.saveGeneratedFiles"] = "true"
+
 
     btn_static_proxy.setOnClickListener {
       val iInvestor = Investor("张三") as IInvestor
@@ -31,6 +31,9 @@ class TestActivity : Activity() {
       val interfaces = arrayOf(IInvestor::class.java)
       val proxy = Proxy.newProxyInstance(classLoader, interfaces, handler) as IInvestor
       deal(proxy)
+      System.getProperties()["sun.misc.ProxyGenerator.saveGeneratedFiles"] = "true"
+      val path = Proxy.getProxyClass(IInvestor::class.java.classLoader, IInvestor::class.java)
+      Log.e("Less","path:$path")
     }
   }
 
@@ -39,4 +42,5 @@ class TestActivity : Activity() {
     proxy.buyStock()
     proxy.sellStock()
   }
+
 }

@@ -14,7 +14,6 @@ class InvestorHandler(private val obj: Any) : InvocationHandler {
     method: Method?,
     args: Array<out Any>?
   ): Any? {
-    Log.i("InvestorHandler", "method:$method")
     return method?.invoke(obj, *args.orEmpty())
   }
 
