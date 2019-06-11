@@ -11,52 +11,54 @@
 /**
  * 先定义一个投资者接口
  */
-interface IInvestor {
+public interface IInvestor {
 
   /**
    * 登录股票账户
    * @param user
    * @param password
    */
-  fun login(
-    user: String,
-    password: String
-  )
+  void login(String user, String password);
 
   /**
    * 买股票
    */
-  fun buyStock()
+  void buyStock();
 
   /**
    * 卖股票
    */
-  fun sellStock()
-
+  void sellStock();
 }
+
 ```
 
 ```kotlin
 /**
  * 真正的投资者类
  */
-class Investor(private var name: String) : IInvestor {
+public class Investor implements IInvestor {
 
-  override fun login(
-    user: String,
-    password: String
-  ) {
-    Log.i("Investor", "$name-登录成功")
+  private String mName;
+
+  public Investor(String name){
+    this.mName = name;
   }
 
-  override fun buyStock() {
-    Log.i("Investor", "$name-在购买股票")
+  @Override
+  public void login(String user, String password) {
+    System.out.println(this.mName + "登录成功！");
   }
 
-  override fun sellStock() {
-    Log.i("Investor", "$name-在卖股票")
+  @Override
+  public void buyStock() {
+    System.out.println(this.mName + "在买股票！");
   }
 
+  @Override
+  public void sellStock() {
+    System.out.println(this.mName + "在卖股票！");
+  }
 }
 ```
 
@@ -64,29 +66,35 @@ class Investor(private var name: String) : IInvestor {
 /**
  * 操盘手类
  */
-class InvestorProxy(private val investor: IInvestor) : IInvestor {
+public class InvestorProxy implements IInvestor {
 
-  override fun login(
-    user: String,
-    password: String
-  ) {
-    investor.login(user, password)
-  }
 
-  override fun buyStock() {
-    investor.buyStock()
-    fee()
-  }
+    private IInvestor mInvestor;
 
-  override fun sellStock() {
-    investor.sellStock()
-    fee()
-  }
+    public InvestorProxy(IInvestor investor){
+        this.mInvestor = investor;
+    }
 
-  private fun fee() {
-    Log.i("InvestorProxy", "买卖股票的费用:100")
-  }
+    @Override
+    public void login(String user, String password) {
+        mInvestor.login(user, password);
+    }
 
+    @Override
+    public void buyStock() {
+        mInvestor.buyStock();
+        fee();
+    }
+
+    @Override
+    public void sellStock() {
+        mInvestor.sellStock();
+        fee();
+    }
+
+    public void fee(){
+        System.out.println("买卖股票费用： 100元");
+    }
 }
 ```
 
@@ -94,24 +102,21 @@ class InvestorProxy(private val investor: IInvestor) : IInvestor {
 /**
  * 场景类
  */
-btn_static_proxy.setOnClickListener {
-      val proxy = InvestorProxy(
-          Investor("张三")
-              as IInvestor
-      ) as IInvestor
-      proxy.login("zhangsan", "123")
-      proxy.buyStock()
-      proxy.sellStock()
-    }
+//操盘手投资
+IInvestor investor = new Investor("张三");
+IInvestor proxy = new InvestorProxy(investor);
+proxy.login("zhangsan", "123");
+proxy.buyStock();
+proxy.sellStock();
 ```
 
 看下结果:
 ```
-张三-登录成功
-张三-在购买股票
-买卖股票的费用:100
-张三-在卖股票
-买卖股票的费用:100
+张三登录成功！
+张三在买股票！
+买卖股票费用： 100元
+张三在卖股票！
+买卖股票费用： 100元
 ```
 
 通过上面的演示发现
