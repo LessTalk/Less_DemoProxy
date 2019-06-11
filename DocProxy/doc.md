@@ -132,3 +132,40 @@ proxy.sellStock();
 - 高扩展性<br>
   真实的角色随时都有可能发生变化,只要实现了他的接口
   代理类不需要有任何修改
+  
+  
+# 动态代理
+
+在静态代理中,我们需要为每一个被代理类生成一个代理类(也就是 操盘手).在动态代理中,这个类是可以自动生成的.
+另外目前很流行的一个名词叫做切面编程(AOP),其核心就是用了动态代理机制.下面还是以炒股来看看动态代理的实现
+接口类和真实类还是使用上面的代码，然后再定义一个InvestorIH，实现InvocationHandler接口，如下
+```java
+public class InvestorIH implements InvocationHandler {
+
+    /**
+     * 被代理的实例
+     */
+    private Object mObj;
+
+    public InvestorIH(Object obj) {
+        this.mObj = obj;
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        return method.invoke(this.mObj, args);
+    }
+}
+```
+动态代理是根据被代理的接口生成所有的方法,但是默认是没有逻辑的,返回值都是空,所有的方法都由InvocationHandler接管处理 下面看下场景类
+```java
+IInvestor investor = new Investor("张三");
+InvocationHandler handler = new InvestorIH(investor);
+ClassLoader cl = investor.getClass().getClassLoader();
+IInvestor proxy =
+                (IInvestor) Proxy.newProxyInstance(cl, new Class[] { IInvestor.class }, handler);
+proxy.login("zhangsan", "123");
+proxy.buyStock();
+proxy.sellStock();
+```
+从上面的代理可以发现,Proxy.newProxyInstance 会给我们生成一个代理类
