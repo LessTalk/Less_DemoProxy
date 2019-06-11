@@ -410,4 +410,129 @@ public static byte[] generateProxyClass(final String var0, Class<?>[] var1, int 
     }
 ```
 这里要稍微解释一下 Java程序的执行只依赖于class文件,和java文件是没有关系的,这个class文件描述了一个类的新,当我们需要使用到一个类时,java虚拟机就会提前去加载这个类的class文件并进行初始化和相关的检验工作,Java虚拟机能够保证在你使用到这个类之前就会完成这些工作，我们只需要安心的去使用它就好了，而不必关心Java虚拟机是怎样加载它的。当然，Class文件并不一定非得通过编译Java文件而来，你甚至可以直接通过文本编辑器来编写Class文件。在这里，JDK动态代理就是通过程序来动态生成Class文件的。到这里我们就知道动态代理的这个代理类是怎么生成的了。
+接下来我们手动操作下
+```java
+byte[] bytes = ProxyGenerator
+                .generateProxyClass("$Proxy0", new Class<?>[] { IInvestor.class });
+        String pathDir = "/Users/less/Desktop/DocLess/DocProxy/DocProxy";
+        String path = "\\$Proxy0.class";
+        File f = new File(pathDir);
+        if (!f.exists()) {
+            f.mkdir();
+        }
+        path = f.getAbsolutePath() + path;
+        f = new File(path);
+        if (f.exists()) {
+            f.delete();
+        }
+        try {
+            f.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(path)) {
+            fos.write(bytes, 0, bytes.length);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+```
+将proxy类输出到项目的根目录
+```java
+package com.sun.proxy;
+
+import com.cfp.pattern.proxy.dynamic.IInvestor;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.UndeclaredThrowableException;
+
+public final class $Proxy0 extends Proxy implements IInvestor {
+    private static Method m1;
+    private static Method m5;
+    private static Method m4;
+    private static Method m2;
+    private static Method m3;
+    private static Method m0;
+
+    public $Proxy0(InvocationHandler var1) throws  {
+        super(var1);
+    }
+
+    public final boolean equals(Object var1) throws  {
+        try {
+            return ((Boolean)super.h.invoke(this, m1, new Object[]{var1})).booleanValue();
+        } catch (RuntimeException | Error var3) {
+            throw var3;
+        } catch (Throwable var4) {
+            throw new UndeclaredThrowableException(var4);
+        }
+    }
+
+    public final void sellStock() throws  {
+        try {
+            super.h.invoke(this, m5, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+
+    public final void buyStock() throws  {
+        try {
+            super.h.invoke(this, m4, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+
+    public final String toString() throws  {
+        try {
+            return (String)super.h.invoke(this, m2, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+
+    public final int login(String var1, String var2) throws  {
+        try {
+            return ((Integer)super.h.invoke(this, m3, new Object[]{var1, var2})).intValue();
+        } catch (RuntimeException | Error var4) {
+            throw var4;
+        } catch (Throwable var5) {
+            throw new UndeclaredThrowableException(var5);
+        }
+    }
+
+    public final int hashCode() throws  {
+        try {
+            return ((Integer)super.h.invoke(this, m0, (Object[])null)).intValue();
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+
+    static {
+        try {
+            m1 = Class.forName("java.lang.Object").getMethod("equals", new Class[]{Class.forName("java.lang.Object")});
+            m5 = Class.forName("com.cfp.pattern.proxy.dynamic.IInvestor").getMethod("sellStock", new Class[0]);
+            m4 = Class.forName("com.cfp.pattern.proxy.dynamic.IInvestor").getMethod("buyStock", new Class[0]);
+            m2 = Class.forName("java.lang.Object").getMethod("toString", new Class[0]);
+            m3 = Class.forName("com.cfp.pattern.proxy.dynamic.IInvestor").getMethod("login", new Class[]{Class.forName("java.lang.String"), Class.forName("java.lang.String")});
+            m0 = Class.forName("java.lang.Object").getMethod("hashCode", new Class[0]);
+        } catch (NoSuchMethodException var2) {
+            throw new NoSuchMethodError(var2.getMessage());
+        } catch (ClassNotFoundException var3) {
+            throw new NoClassDefFoundError(var3.getMessage());
+        }
+    }
+}
+```
 
