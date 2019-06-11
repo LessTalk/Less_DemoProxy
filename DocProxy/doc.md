@@ -169,3 +169,7 @@ proxy.buyStock();
 proxy.sellStock();
 ```
 从上面的代理可以发现,Proxy.newProxyInstance 会给我们生成一个代理类.那么代理类中的逻辑需要我们InvestorIH中来实现.这就是动态代理的jdk实现,因为我们使用了jdk中的api生成代理类.
+
+# JDK中动态代理分析
+
+在上面的内容中,我们了解了动态代理的基础使用
