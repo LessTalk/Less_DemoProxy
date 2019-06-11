@@ -172,4 +172,242 @@ proxy.sellStock();
 
 # JDK中动态代理分析
 
-在上面的内容中,我们了解了动态代理的基础使用
+在上面的内容中,我们了解了动态代理的基础使用,下面我们分析下具体的源码
+```java
+ublic static Object newProxyInstance(ClassLoader loader,
+                                          Class<?>[] interfaces,
+                                          InvocationHandler h)
+
+```
+这个方法需要传入3个参数，先看看他们的作用
+- loader 一个类加载器
+- 一个Interface对象的数组，表示的是我将要给我需要代理的对象提供一组什么接口
+- 上文中多次提到的handler
+
+下面我们一起看下注视
+```java
+@CallerSensitive
+   public static Object newProxyInstance(ClassLoader loader,
+                                         Class<?>[] interfaces,
+                                         InvocationHandler h)
+       throws IllegalArgumentException
+   {
+
+       Objects.requireNonNull(h);
+
+       //克隆要被代理的接口
+       final Class<?>[] intfs = interfaces.clone();
+       final SecurityManager sm = System.getSecurityManager();
+       if (sm != null) {
+           checkProxyAccess(Reflection.getCallerClass(), loader, intfs);
+       }
+
+       /*
+        * Look up or generate the designated proxy class.
+        */
+        //查找或者生成特定的代理类 class
+       Class<?> cl = getProxyClass0(loader, intfs);
+
+       /*
+        * Invoke its constructor with the designated invocation handler.
+        */
+       try {
+           if (sm != null) {
+               checkNewProxyPermission(Reflection.getCallerClass(), cl);
+           }
+           //获取参数类型是InvocationHandler.class的代理类构造器
+           final Constructor<?> cons = cl.getConstructor(constructorParams);
+           final InvocationHandler ih = h;
+           if (!Modifier.isPublic(cl.getModifiers())) {
+               AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                   public Void run() {
+                       cons.setAccessible(true);
+                       return null;
+                   }
+               });
+           }
+            //传入InvocationHandler实例去构造一个代理类的实例
+           return cons.newInstance(new Object[]{h});
+       } catch (IllegalAccessException|InstantiationException e) {
+           throw new InternalError(e.toString(), e);
+       } catch (InvocationTargetException e) {
+           Throwable t = e.getCause();
+           if (t instanceof RuntimeException) {
+               throw (RuntimeException) t;
+           } else {
+               throw new InternalError(t.toString(), t);
+           }
+       } catch (NoSuchMethodException e) {
+           throw new InternalError(e.toString(), e);
+       }
+   }
+```
+
+所以获取代理类的实例，重点到了下面的这行代码中
+
+```java
+//查找或者生成特定的代理类 class
+Class<?> cl = getProxyClass0(loader, intfs);
+```
+看下getProxyClass0
+```java
+/**
+   * Generate a proxy class.  Must call the checkProxyAccess method
+   * to perform permission checks before calling this.
+   */
+  private static Class<?> getProxyClass0(ClassLoader loader,
+                                         Class<?>... interfaces) {
+      if (interfaces.length > 65535) {
+          throw new IllegalArgumentException("interface limit exceeded");
+      }
+
+      // If the proxy class defined by the given loader implementing
+      // the given interfaces exists, this will simply return the cached copy;
+      // otherwise, it will create the proxy class via the ProxyClassFactory
+
+      //如果缓存中有，则使用缓存，否则通过ProxyClassFactory创建
+      return proxyClassCache.get(loader, interfaces);
+  }
+```
+再来看get 方法
+```java
+public V get(K var1, P var2) {
+        Objects.requireNonNull(var2);
+        this.expungeStaleEntries();
+        Object var3 = WeakCache.CacheKey.valueOf(var1, this.refQueue);
+        Object var4 = (ConcurrentMap)this.map.get(var3);
+        if (var4 == null) {
+            ConcurrentMap var5 = (ConcurrentMap)this.map.putIfAbsent(var3, var4 = new ConcurrentHashMap());
+            if (var5 != null) {
+                var4 = var5;
+            }
+        }
+        //先忽略缓存.重点看下这里 找不到就apply生成一个
+        Object var9 = Objects.requireNonNull(this.subKeyFactory.apply(var1, var2));
+        Object var6 = (Supplier)((ConcurrentMap)var4).get(var9);
+        WeakCache.Factory var7 = null;
+
+        while(true) {
+            if (var6 != null) {
+                Object var8 = ((Supplier)var6).get();
+                if (var8 != null) {
+                    return var8;
+                }
+            }
+
+            if (var7 == null) {
+                var7 = new WeakCache.Factory(var1, var2, var9, (ConcurrentMap)var4);
+            }
+
+            if (var6 == null) {
+                var6 = (Supplier)((ConcurrentMap)var4).putIfAbsent(var9, var7);
+                if (var6 == null) {
+                    var6 = var7;
+                }
+            } else if (((ConcurrentMap)var4).replace(var9, var6, var7)) {
+                var6 = var7;
+            } else {
+                var6 = (Supplier)((ConcurrentMap)var4).get(var9);
+            }
+        }
+    }
+```
+在看apply
+```java
+public Class<?> apply(ClassLoader var1, Class<?>[] var2) {
+            IdentityHashMap var3 = new IdentityHashMap(var2.length);
+            Class[] var4 = var2;
+            int var5 = var2.length;
+
+            for(int var6 = 0; var6 < var5; ++var6) {
+                Class var7 = var4[var6];
+                Class var8 = null;
+
+                try {
+                    var8 = Class.forName(var7.getName(), false, var1);
+                } catch (ClassNotFoundException var15) {
+                }
+
+                if (var8 != var7) {
+                    throw new IllegalArgumentException(var7 + " is not visible from class loader");
+                }
+
+                if (!var8.isInterface()) {
+                    throw new IllegalArgumentException(var8.getName() + " is not an interface");
+                }
+
+                if (var3.put(var8, Boolean.TRUE) != null) {
+                    throw new IllegalArgumentException("repeated interface: " + var8.getName());
+                }
+            }
+
+            String var16 = null;
+            byte var17 = 17;
+            Class[] var18 = var2;
+            int var20 = var2.length;
+
+            for(int var21 = 0; var21 < var20; ++var21) {
+                Class var9 = var18[var21];
+                int var10 = var9.getModifiers();
+                if (!Modifier.isPublic(var10)) {
+                    var17 = 16;
+                    String var11 = var9.getName();
+                    int var12 = var11.lastIndexOf(46);
+                    String var13 = var12 == -1 ? "" : var11.substring(0, var12 + 1);
+                    if (var16 == null) {
+                        var16 = var13;
+                    } else if (!var13.equals(var16)) {
+                        throw new IllegalArgumentException("non-public interfaces from different packages");
+                    }
+                }
+            }
+
+            if (var16 == null) {
+                var16 = "com.sun.proxy.";
+            }
+
+            long var19 = nextUniqueNumber.getAndIncrement();
+            String var23 = var16 + "$Proxy" + var19;
+            byte[] var22 = ProxyGenerator.generateProxyClass(var23, var2, var17);
+
+            try {
+                return Proxy.defineClass0(var1, var23, var22, 0, var22.length);
+            } catch (ClassFormatError var14) {
+                throw new IllegalArgumentException(var14.toString());
+            }
+        }
+    }
+```
+通过上面的逻辑 我们看到 通过ProxyGenerator.generateProxyClass（）生成了代理类的.class文件
+```java
+public static byte[] generateProxyClass(final String var0, Class<?>[] var1, int var2) {
+        ProxyGenerator var3 = new ProxyGenerator(var0, var1, var2);
+        final byte[] var4 = var3.generateClassFile();
+        if (saveGeneratedFiles) {
+            AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                public Void run() {
+                    try {
+                        int var1 = var0.lastIndexOf(46);
+                        Path var2;
+                        if (var1 > 0) {
+                            Path var3 = Paths.get(var0.substring(0, var1).replace('.', File.separatorChar));
+                            Files.createDirectories(var3);
+                            var2 = var3.resolve(var0.substring(var1 + 1, var0.length()) + ".class");
+                        } else {
+                            var2 = Paths.get(var0 + ".class");
+                        }
+
+                        Files.write(var2, var4, new OpenOption[0]);
+                        return null;
+                    } catch (IOException var4x) {
+                        throw new InternalError("I/O exception saving generated file: " + var4x);
+                    }
+                }
+            });
+        }
+
+        return var4;
+    }
+```
+这里要稍微解释一下 Java程序的执行只依赖于class文件,和java文件是没有关系的,这个class文件描述了一个类的新,当我们需要使用到一个类时,java虚拟机就会提前去加载这个类的class文件并进行初始化和相关的检验工作,Java虚拟机能够保证在你使用到这个类之前就会完成这些工作，我们只需要安心的去使用它就好了，而不必关心Java虚拟机是怎样加载它的。当然，Class文件并不一定非得通过编译Java文件而来，你甚至可以直接通过文本编辑器来编写Class文件。在这里，JDK动态代理就是通过程序来动态生成Class文件的。到这里我们就知道动态代理的这个代理类是怎么生成的了。
+
