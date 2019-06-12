@@ -184,7 +184,7 @@ ublic static Object newProxyInstance(ClassLoader loader,
 - 一个Interface对象的数组，表示的是我将要给我需要代理的对象提供一组什么接口
 - 上文中多次提到的handler
 
-下面我们一起看下注视
+这里有一个疑问 就是我们的操盘手类究竟是如何生成的 我们继续看下
 ```java
 @CallerSensitive
    public static Object newProxyInstance(ClassLoader loader,
