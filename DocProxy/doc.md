@@ -409,6 +409,120 @@ public static byte[] generateProxyClass(final String var0, Class<?>[] var1, int 
         return var4;
     }
 ```
+
+我们再来看下generateClassFile()
+```java
+private byte[] generateClassFile() {
+        this.addProxyMethod(hashCodeMethod, Object.class);
+        this.addProxyMethod(equalsMethod, Object.class);
+        this.addProxyMethod(toStringMethod, Object.class);
+        Class[] var1 = this.interfaces;
+        int var2 = var1.length;
+
+        int var3;
+        Class var4;
+        for(var3 = 0; var3 < var2; ++var3) {
+            var4 = var1[var3];
+            Method[] var5 = var4.getMethods();
+            int var6 = var5.length;
+
+            for(int var7 = 0; var7 < var6; ++var7) {
+                Method var8 = var5[var7];
+                this.addProxyMethod(var8, var4);
+            }
+        }
+
+        Iterator var11 = this.proxyMethods.values().iterator();
+
+        List var12;
+        while(var11.hasNext()) {
+            var12 = (List)var11.next();
+            checkReturnTypes(var12);
+        }
+
+        Iterator var15;
+        try {
+            this.methods.add(this.generateConstructor());
+            var11 = this.proxyMethods.values().iterator();
+
+            while(var11.hasNext()) {
+                var12 = (List)var11.next();
+                var15 = var12.iterator();
+
+                while(var15.hasNext()) {
+                    ProxyGenerator.ProxyMethod var16 = (ProxyGenerator.ProxyMethod)var15.next();
+                    this.fields.add(new ProxyGenerator.FieldInfo(var16.methodFieldName, "Ljava/lang/reflect/Method;", 10));
+                    this.methods.add(var16.generateMethod());
+                }
+            }
+
+            this.methods.add(this.generateStaticInitializer());
+        } catch (IOException var10) {
+            throw new InternalError("unexpected I/O Exception", var10);
+        }
+
+        if (this.methods.size() > 65535) {
+            throw new IllegalArgumentException("method limit exceeded");
+        } else if (this.fields.size() > 65535) {
+            throw new IllegalArgumentException("field limit exceeded");
+        } else {
+            this.cp.getClass(dotToSlash(this.className));
+            this.cp.getClass("java/lang/reflect/Proxy");
+            var1 = this.interfaces;
+            var2 = var1.length;
+
+            for(var3 = 0; var3 < var2; ++var3) {
+                var4 = var1[var3];
+                this.cp.getClass(dotToSlash(var4.getName()));
+            }
+
+            this.cp.setReadOnly();
+            ByteArrayOutputStream var13 = new ByteArrayOutputStream();
+            DataOutputStream var14 = new DataOutputStream(var13);
+
+            try {
+                var14.writeInt(-889275714);
+                var14.writeShort(0);
+                var14.writeShort(49);
+                this.cp.write(var14);
+                var14.writeShort(this.accessFlags);
+                var14.writeShort(this.cp.getClass(dotToSlash(this.className)));
+                var14.writeShort(this.cp.getClass("java/lang/reflect/Proxy"));
+                var14.writeShort(this.interfaces.length);
+                Class[] var17 = this.interfaces;
+                int var18 = var17.length;
+
+                for(int var19 = 0; var19 < var18; ++var19) {
+                    Class var22 = var17[var19];
+                    var14.writeShort(this.cp.getClass(dotToSlash(var22.getName())));
+                }
+
+                var14.writeShort(this.fields.size());
+                var15 = this.fields.iterator();
+
+                while(var15.hasNext()) {
+                    ProxyGenerator.FieldInfo var20 = (ProxyGenerator.FieldInfo)var15.next();
+                    var20.write(var14);
+                }
+
+                var14.writeShort(this.methods.size());
+                var15 = this.methods.iterator();
+
+                while(var15.hasNext()) {
+                    ProxyGenerator.MethodInfo var21 = (ProxyGenerator.MethodInfo)var15.next();
+                    var21.write(var14);
+                }
+
+                var14.writeShort(0);
+                return var13.toByteArray();
+            } catch (IOException var9) {
+                throw new InternalError("unexpected I/O Exception", var9);
+            }
+        }
+    }
+```
+
+
 这里要稍微解释一下 Java程序的执行只依赖于class文件,和java文件是没有关系的,这个class文件描述了一个类的新,当我们需要使用到一个类时,java虚拟机就会提前去加载这个类的class文件并进行初始化和相关的检验工作,Java虚拟机能够保证在你使用到这个类之前就会完成这些工作，我们只需要安心的去使用它就好了，而不必关心Java虚拟机是怎样加载它的。当然，Class文件并不一定非得通过编译Java文件而来，你甚至可以直接通过文本编辑器来编写Class文件。在这里，JDK动态代理就是通过程序来动态生成Class文件的。到这里我们就知道动态代理的这个代理类是怎么生成的了。
 接下来我们手动操作下
 ```java
